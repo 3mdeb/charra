@@ -30,7 +30,7 @@
 #include "../common/charra_log.h"
 
 TSS2_RC tpm2_create_primary_key_rsa2048(
-	ESYS_CONTEXT* ctx, ESYS_TR* primary_handle) {
+	ESYS_CONTEXT* ctx, ESYS_TR* primary_handle, TPM2B_PUBLIC** out_public) {
 	TSS2_RC r = TSS2_RC_SUCCESS;
 	char* error_msg = NULL;
 
@@ -107,7 +107,6 @@ TSS2_RC tpm2_create_primary_key_rsa2048(
 	/* declare/define all needed in and out parameters */
 	TPM2B_DATA outsideInfo = {.size = 0, .buffer = {0}};
 	TPML_PCR_SELECTION creationPCR = {.count = 0};
-	// TPM2B_PUBLIC* outPublic;
 	// TPM2B_CREATION_DATA* creationData;
 	// TPM2B_DIGEST* creationHash;
 	// TPMT_TK_CREATION* creationTicket;
@@ -117,9 +116,10 @@ TSS2_RC tpm2_create_primary_key_rsa2048(
 	// 	ESYS_TR_NONE, ESYS_TR_NONE, &inSensitivePrimary, &inPublic,
 	// 	&outsideInfo, &creationPCR, primary_handle, &outPublic, &creationData,
 	// 	&creationHash, &creationTicket);
-	r = Esys_CreatePrimary(ctx, ESYS_TR_RH_OWNER, ESYS_TR_PASSWORD,
-		ESYS_TR_NONE, ESYS_TR_NONE, &inSensitivePrimary, &inPublic,
-		&outsideInfo, &creationPCR, primary_handle, NULL, NULL, NULL, NULL);
+		r = Esys_CreatePrimary(ctx, ESYS_TR_RH_OWNER, ESYS_TR_PASSWORD,
+			ESYS_TR_NONE, ESYS_TR_NONE, &inSensitivePrimary, &inPublic,
+			&outsideInfo, &creationPCR, primary_handle, out_public, NULL,
+			NULL, NULL);
 	/*ERROR CHECK*/
 	if (r != TSS2_RC_SUCCESS) {
 		error_msg = "Esys_CreatePrimary";

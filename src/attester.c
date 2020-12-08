@@ -46,6 +46,7 @@
 
 /* config */
 static const unsigned int PORT = 5683;   // default port
+static const unsigned int MAX_SIZE = 1300; // MTU payload max size
 #define CBOR_ENCODER_BUFFER_LENGTH 20480 // 20 KiB should be sufficient
 
 /* --- resource handler forward declarations ------------------------------ */
@@ -121,6 +122,7 @@ static void coap_attestation_handler(struct coap_context_t* ctx UNUSED,
 	int coap_r = 0;
 	TSS2_RC tss_r = 0;
 	ESYS_TR sig_key_handle = ESYS_TR_NONE;
+	TPM2B_PUBLIC* public_key = NULL;
 
 	/* --- receive incoming data --- */
 
@@ -181,7 +183,8 @@ static void coap_attestation_handler(struct coap_context_t* ctx UNUSED,
 	/* load TPM key */
 	charra_log_info("[" LOG_NAME "] Loading TPM key.");
 	if ((charra_r = charra_load_tpm2_key(esys_ctx, req.sig_key_id_len,
-			 req.sig_key_id, &sig_key_handle)) != CHARRA_RC_SUCCESS) {
+			 req.sig_key_id, &sig_key_handle,
+			 &public_key)) != CHARRA_RC_SUCCESS) {
 		charra_log_error("[" LOG_NAME "] Could not load TPM key.");
 		goto error;
 	}
@@ -207,7 +210,8 @@ static void coap_attestation_handler(struct coap_context_t* ctx UNUSED,
 	res.attestation_data = attest->attestationData;
 	res.tpm2_signature_len = sizeof(*signature);
 	res.tpm2_signature = (uint8_t*)signature;
-
+	res.tpm2_public_key = public_key;
+	res.tpm2_public_key_len = sizeof(TPM2B_PUBLIC);
 	/* marshal response */
 	charra_log_info("[" LOG_NAME "] Marshaling response.");
 	uint32_t res_buf_len;
@@ -219,6 +223,7 @@ static void coap_attestation_handler(struct coap_context_t* ctx UNUSED,
 		"[" LOG_NAME
 		"] Adding marshaled data to CoAP response PDU and send it.");
 	out->code = COAP_RESPONSE_CODE(205);
+	out->max_size = MAX_SIZE;
 	coap_add_data(out, res_buf_len, res_buf);
 
 error:

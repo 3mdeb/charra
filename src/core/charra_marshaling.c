@@ -219,6 +219,7 @@ CHARRA_RC marshal_attestation_response(
 	assert(attestation_response != NULL);
 	assert(attestation_response->attestation_data != NULL);
 	assert(attestation_response->tpm2_signature != NULL);
+	assert(attestation_response->tpm2_public_key != NULL);
 
 	UsefulBuf_MAKE_STACK_UB(buf, CBOR_ENCODER_BUFFER_LENGTH);
 	QCBOREncodeContext EC;
@@ -235,6 +236,10 @@ CHARRA_RC marshal_attestation_response(
 	/* encode "tpm2-signature" */
 	UsefulBufC Tpm2Signature = {attestation_response->tpm2_signature, attestation_response->tpm2_signature_len};
 	QCBOREncode_AddBytes(&EC, Tpm2Signature);
+
+	/* encode "tpm2-key-signature" */
+	UsefulBufC Tpm2KeyPublic = {attestation_response->tpm2_public_key, attestation_response->tpm2_public_key_len};
+	QCBOREncode_AddBytes(&EC, Tpm2KeyPublic);
 
 	/* close array: root_array_encoder */
 	QCBOREncode_CloseArray(&EC);
@@ -278,6 +283,12 @@ CHARRA_RC unmarshal_attestation_response(uint32_t marshaled_data_len,
 		goto cbor_parse_error;
 	attestation_response->tpm2_signature_len = item.val.string.len;
 	attestation_response->tpm2_signature = (uint8_t*)item.val.string.ptr;
+
+	/* parse "tpm2_public_key (bytes)" */
+	if((cborerr = charra_cbor_getnext(&DC, &item, QCBOR_TYPE_BYTE_STRING)))
+		goto cbor_parse_error;
+	attestation_response->tpm2_public_key_len = item.val.string.len;
+	attestation_response->tpm2_public_key = (TPM2B_PUBLIC*)item.val.string.ptr;
 
 	if((cborerr = QCBORDecode_Finish(&DC))) {
 		charra_log_error("CBOR parser: expected end of input, but could not "

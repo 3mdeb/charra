@@ -154,9 +154,12 @@ int main(void) {
 	coap_send(session, pdu);
 
 	result = EXIT_SUCCESS;
-
-        if(coap_io_process(ctx, 0) < 0)
-          result = 10;  /* FAIL */
+	
+	int i;
+	for (i=0; i<3; i++) {
+		if(coap_io_process(ctx, 0) < 0)
+			result = 10;  /* FAIL */
+	}
 
 finish:
 	/* free memory */
@@ -192,7 +195,7 @@ static CHARRA_RC create_attestation_request(
 	req->hello = false;
 	req->sig_key_id_len = TPM_SIG_KEY_NAME_LEN;
 	req->sig_key_id = (uint8_t*)TPM_SIG_KEY_NAME;
-	req->nonce_len = nonce_len, req->nonce = nonce, req->pcr_selections_len = 3;
+	req->nonce_len = nonce_len, req->nonce = nonce, req->pcr_selections_len = 2;
 	req->pcr_selections =
 		create_pcr_selection_dto_array(req->pcr_selections_len);
 
@@ -223,20 +226,6 @@ static CHARRA_RC create_attestation_request(
 	req->pcr_selections[1].pcrs[6] = 6;
 	req->pcr_selections[1].pcrs[7] = 7;
 	req->pcr_selections[1].pcrs[8] = 10;
-
-	req->pcr_selections[2].tcg_hash_alg_id = (uint16_t)TPM2_ALG_SHA384;
-	req->pcr_selections[2].pcrs_len = 9;
-	req->pcr_selections[2].pcrs =
-		calloc(req->pcr_selections[2].pcrs_len, sizeof(uint8_t));
-	req->pcr_selections[2].pcrs[0] = 0;
-	req->pcr_selections[2].pcrs[1] = 1;
-	req->pcr_selections[2].pcrs[2] = 2;
-	req->pcr_selections[2].pcrs[3] = 3;
-	req->pcr_selections[2].pcrs[4] = 4;
-	req->pcr_selections[2].pcrs[5] = 5;
-	req->pcr_selections[2].pcrs[6] = 6;
-	req->pcr_selections[2].pcrs[7] = 7;
-	req->pcr_selections[2].pcrs[8] = 10;
 
 	/* set output param(s) */
 	*attestation_request = req;
